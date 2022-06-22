@@ -7,26 +7,28 @@ def collate_fn(data):
     as the size of every sentence is different and merging sequences (including padding)
     is not supported in default.
     Args:
-        data: list of dicts {'HR': hr_sig, 'SR': sr_sig, 'filename': filename}
+        data: list of dicts {'target': target_signal, 'source': source_signal, 'filename': filename, 'length': target/source signal_length}
     Return:
-        dictionary of batches: {'HR': hr_sig_batch, 'SR': sr_sig_batch, 'filename': hr_filename_batch}
+        dictionary of batches: {'target': target_signal_batch, 'source': source_signal_batch, 'filename': filename_batch, 'length', length_batch}
     '''
-    lengths = [d['HR'].size(-1) for d in data]
-    sig_channels = data[0]['SR'].size(0)
+    lengths = [d['target'].size(-1) for d in data]
+    sig_channels = data[0]['source'].size(0)
     max_len = max(lengths)
-    hr_padded = torch.zeros(len(data), sig_channels, max_len).type(data[0]['HR'].type())
-    sr_padded = torch.zeros(len(data), sig_channels, max_len).type(data[0]['SR'].type())
+    target_padded = torch.zeros(len(data), sig_channels, max_len).type(data[0]['target'].type())
+    source_padded = torch.zeros(len(data), sig_channels, max_len).type(data[0]['source'].type())
 
     for i in range(len(data)):
-        sig_len = data[i]['HR'].size(-1)
-        hr_padded[i,:,:sig_len] = data[i]['HR']
-        sr_padded[i,:,:sig_len] = data[i]['SR']
+        target_length = data[i]['target'].size(-1)
+        source_length = data[i]['source'].size(-1)
+        assert target_length == source_length
+        target_padded[i,:,:target_length] = data[i]['target']
+        source_padded[i,:,:source_length] = data[i]['source']
 
     filenames = [d['filename'] for d in data]
     file_lengths = [d['length'] for d in data]
 
 
-    return {'HR': hr_padded, 'SR': sr_padded, 'filename': filenames, 'length': file_lengths}
+    return {'target': target_padded, 'source': source_padded, 'filename': filenames, 'length': file_lengths}
 
 
 class SequentialBinSampler(torch.utils.data.Sampler):
