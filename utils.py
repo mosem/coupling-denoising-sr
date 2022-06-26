@@ -3,6 +3,7 @@ import logging
 from collections import OrderedDict
 import json
 from datetime import datetime
+import hydra
 
 
 def mkdirs(paths):
@@ -15,6 +16,11 @@ def mkdirs(paths):
 
 def get_timestamp():
     return datetime.now().strftime('%y%m%d_%H%M%S')
+
+
+def parse_dset_args(dset_args):
+    dset_args.dset['train_json_dir'] = hydra.utils.to_absolute_path(dset_args.dset.train_json_dir)
+    dset_args.dset['val_json_dir'] = hydra.utils.to_absolute_path(dset_args.dset.val_json_dir)
 
 
 def parse(args):

@@ -50,7 +50,7 @@ if __name__ == "__main__":
     # dataset
     for phase, dataset_opt in opt['datasets'].items():
         if phase == 'val':
-            val_set = Data.create_dataset(dataset_opt, phase)
+            val_set = Data.create_dataset(dataset_opt, pad_to_output_length=True)
             sampler = SequentialBinSampler(val_set.get_file_lengths())
             val_loader = Data.create_dataloader(
                 val_set, dataset_opt, phase, sampler, collate_fn)

@@ -10,20 +10,20 @@ logger = logging.getLogger('base')
 
 
 class DDPM(BaseModel):
-    def __init__(self, opt):
-        super(DDPM, self).__init__(opt)
+    def __init__(self, args):
+        super(DDPM, self).__init__(args)
         # define network and load pretrained models
-        self.netG = self.set_device(networks.define_G(opt))
+        self.netG = self.set_device(networks.define_G(args))
         self.schedule_phase = None
 
         # set loss and load resume state
         self.set_loss()
         self.set_new_noise_schedule(
-            opt['model']['beta_schedule']['train'], schedule_phase='train')
+            args.beta_schedule.train, schedule_phase='train')
         if self.opt['phase'] == 'train':
             self.netG.train()
             # find the parameters to optimize
-            if opt['model']['finetune_norm']:
+            if args.finetune_norm:
                 optim_params = []
                 for k, v in self.netG.named_parameters():
                     v.requires_grad = False
@@ -37,7 +37,7 @@ class DDPM(BaseModel):
                 optim_params = list(self.netG.parameters())
 
             self.optG = torch.optim.Adam(
-                optim_params, lr=opt['train']["optimizer"]["lr"])
+                optim_params, lr=args.train.optimizer.lr)
             self.log_dict = OrderedDict()
         self.load_network()
         self.print_network()
@@ -75,19 +75,19 @@ class DDPM(BaseModel):
         else:
             self.netG.set_loss(self.device)
 
-    def set_new_noise_schedule(self, schedule_opt, schedule_phase='train'):
+    def set_new_noise_schedule(self, schedule_config, schedule_phase='train'):
         if self.schedule_phase is None or self.schedule_phase != schedule_phase:
             self.schedule_phase = schedule_phase
             if isinstance(self.netG, nn.DataParallel):
                 self.netG.module.set_new_noise_schedule(
-                    schedule_opt, self.device)
+                    schedule_config, self.device)
             else:
-                self.netG.set_new_noise_schedule(schedule_opt, self.device)
+                self.netG.set_new_noise_schedule(schedule_config, self.device)
 
     def get_current_log(self):
         return self.log_dict
 
-    def get_current_signals(self, need_source_raw=True):
+    def get_current_signals(self, need_source_raw=False):
         out_dict = OrderedDict()
 
         out_dict['pred'] = self.pred.detach().float().cpu()

@@ -1,0 +1,80 @@
+defaults:
+  - dset: dummy-noisy-8-clean-16
+  - model: hdemucs
+  - hydra/job_logging: colorlog
+  - hydra/hydra_logging: colorlog
+
+experiment_name: main
+
+path:
+  resume_state: False
+  log: logs
+  results: results
+  checkpoint: checkpoint
+
+
+
+beta_schedule:
+  train:
+    schedule: linear
+    n_timestep: 100
+    linear_start: 1e-6
+    linear_end: 1e-2
+  val:
+    schedule: linear
+    n_timestep: 100
+    linear_start: 1e-6
+    linear_end: 1e-2
+
+finetune_norm: false
+
+train:
+  n_iter: 400
+  val_freq: 100
+  save_checkpoint_freq: 100
+  print_freq: 100
+  optimizer:
+    type: adam
+    lr: 1e-4
+
+
+test:
+  disable_eval: False
+
+wandb:
+  project: coupling-denoising-sr
+  group: noisy-8-clean-16 # TODO: change this from script
+  name: dummy #TODO: change this from script
+  enable: True
+  log_eval: False
+  log_infer: False
+  log_wandb_ckpt: False
+
+hydra:
+  sweep:
+    dir: ./outputs/${dset.name}/${experiment_name}
+    subdir: ${hydra.job.num}
+  run:
+    dir: ./outputs/${dset.name}/${experiment_name}
+  job:
+    config:
+      # configuration for the ${hydra.job.override_dirname} runtime variable
+
+  job_logging:
+    handlers:
+      file:
+        class: logging.FileHandler
+        mode: w
+        formatter: colorlog
+        filename: trainer.log
+      console:
+        class: logging.StreamHandler
+        formatter: colorlog
+        stream: ext://sys.stderr
+
+  hydra_logging:
+    handlers:
+      console:
+        class: logging.StreamHandler
+        formatter: colorlog
+        stream: ext://sys.stderr

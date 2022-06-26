@@ -83,14 +83,14 @@ class GaussianDiffusion(nn.Module):
         else:
             raise NotImplementedError()
 
-    def set_new_noise_schedule(self, schedule_opt, device):
+    def set_new_noise_schedule(self, schedule_config, device):
         to_torch = partial(torch.tensor, dtype=torch.float32, device=device)
 
         betas = make_beta_schedule(
-            schedule=schedule_opt['schedule'],
-            n_timestep=schedule_opt['n_timestep'],
-            linear_start=schedule_opt['linear_start'],
-            linear_end=schedule_opt['linear_end'])
+            schedule=schedule_config.schedule,
+            n_timestep=schedule_config.n_timestep,
+            linear_start=schedule_config.linear_start,
+            linear_end=schedule_config.linear_end)
         betas = betas.detach().cpu().numpy() if isinstance(
             betas, torch.Tensor) else betas
         alphas = 1. - betas

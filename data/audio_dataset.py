@@ -31,10 +31,10 @@ def compute_output_length(length, depth):
 class AudioDataset(Dataset):
 
     def __init__(self, json_dir, source_sr=8000, target_sr=16000, stride=None, segment=None, pad=True,
-                 split='train', data_len=-1, need_source_raw=False):
+                 pad_to_output_length=False, data_len=-1, need_source_raw=False):
         self.data_len = data_len
         self.need_source_raw = need_source_raw
-        self.split = split
+        self.pad_to_output_length = pad_to_output_length
 
         self.source_sr = source_sr
         self.target_sr = target_sr
@@ -61,11 +61,11 @@ class AudioDataset(Dataset):
 
         self.dataset_len = len(self.target_set)
 
-        if self.need_source_raw:
-            source_raw_json = os.path.join(json_dir, 'source.json')
-            with open(source_raw_json, 'r') as f:
-                source_raw = json.load(f)
-            self.source_raw_set = Audioset(source_raw, sample_rate=source_sr, length=source_length, stride=source_stride, pad=pad, channels=1)
+        # if self.need_source_raw:
+        #     source_raw_json = os.path.join(json_dir, 'source.json')
+        #     with open(source_raw_json, 'r') as f:
+        #         source_raw = json.load(f)
+        #     self.source_raw_set = Audioset(source_raw, sample_rate=source_sr, length=source_length, stride=source_stride, pad=pad, channels=1)
 
         if self.data_len <= 0:
             self.data_len = self.dataset_len
@@ -88,15 +88,17 @@ class AudioDataset(Dataset):
 
         target_len = target_sig.shape[-1]
 
-        if self.split == 'val':
+        if self.pad_to_output_length:
             sig_len = compute_output_length(target_sig.shape[-1], 5)
             target_sig = F.pad(target_sig, (0, sig_len - target_sig.shape[-1]))
             source_sig = F.pad(source_sig, (0, sig_len - source_sig.shape[-1]))
 
-        if self.need_source_raw:
-            source_raw_sig, source_raw_filename = self.source_raw_set[index]
-            # augment?
-            return {'source_raw': source_raw_sig, 'target': target_sig, 'source': source_sig, 'filename': target_filename, 'length': target_len}
-        else:
-            # augment?
-            return {'target': target_sig, 'source': source_sig, 'filename': target_filename, 'length': target_len}
+        return {'target': target_sig, 'source': source_sig, 'filename': target_filename, 'length': target_len}
+
+        # if self.need_source_raw:
+        #     source_raw_sig, source_raw_filename = self.source_raw_set[index]
+        #     # augment?
+        #     return {'source_raw': source_raw_sig, 'target': target_sig, 'source': source_sig, 'filename': target_filename, 'length': target_len}
+        # else:
+        #     # augment?
+        #     return {'target': target_sig, 'source': source_sig, 'filename': target_filename, 'length': target_len}
