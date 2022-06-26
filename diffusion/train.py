@@ -7,6 +7,7 @@ from utils import setup_logger, parse, dict_to_nonedict, dict2str
 import metrics as Metrics
 from wandb_logger import WandbLogger
 import os
+import hydra
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
