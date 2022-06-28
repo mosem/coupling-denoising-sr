@@ -1,54 +1,34 @@
 defaults:
   - dset: dummy-noisy-8-clean-16
   - model: hdemucs
+  - noise_schedule: dummy
+  - train: dummy
   - hydra/job_logging: colorlog
   - hydra/hydra_logging: colorlog
 
-experiment_name: main
+device: cuda
+phase: # set in script
+distributed: False
+
+resume: True
+resume_state: # e.g. I400_E100
 
 path:
-  resume_state: False
-  log: logs
   results: results
   checkpoint: checkpoint
 
+disable_eval: False
 
-
-beta_schedule:
-  train:
-    schedule: linear
-    n_timestep: 100
-    linear_start: 1e-6
-    linear_end: 1e-2
-  val:
-    schedule: linear
-    n_timestep: 100
-    linear_start: 1e-6
-    linear_end: 1e-2
-
-finetune_norm: false
-
-train:
-  n_iter: 400
-  val_freq: 100
-  save_checkpoint_freq: 100
-  print_freq: 100
-  optimizer:
-    type: adam
-    lr: 1e-4
-
-
-test:
-  disable_eval: False
+experiment_name: ${model.name},batch_size=${dset.train_batch_size},n_iter=${train.n_iter}
 
 wandb:
   project: coupling-denoising-sr
-  group: noisy-8-clean-16 # TODO: change this from script
-  name: dummy #TODO: change this from script
+  group: ${dset.name}
+  name: ${experiment_name}
   enable: True
-  log_eval: False
-  log_infer: False
+  log_eval: True
   log_wandb_ckpt: False
+  resume: True
 
 hydra:
   sweep:
@@ -56,9 +36,9 @@ hydra:
     subdir: ${hydra.job.num}
   run:
     dir: ./outputs/${dset.name}/${experiment_name}
-  job:
-    config:
-      # configuration for the ${hydra.job.override_dirname} runtime variable
+  #  job:
+  #    config:
+  #      # configuration for the ${hydra.job.override_dirname} runtime variable
 
   job_logging:
     handlers:

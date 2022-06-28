@@ -1,0 +1,9 @@
+# @package train
+
+n_iter: 400
+val_freq: 100
+save_checkpoint_freq: 100
+print_freq: 100
+optimizer:
+  type: adam
+  lr: 1e-4

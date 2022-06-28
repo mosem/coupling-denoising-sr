@@ -50,6 +50,7 @@ def calculate_pesq(out_sig, ref_sig, sr):
 # this is because pystoi raises a FutureWarning:
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action='ignore', category=UserWarning)
 
 def calculate_stoi(out_sig, ref_sig, sr):
     """Calculate STOI.

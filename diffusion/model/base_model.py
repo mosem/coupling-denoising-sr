@@ -4,10 +4,9 @@ import torch.nn as nn
 
 
 class BaseModel():
-    def __init__(self, opt):
-        self.opt = opt
-        self.device = torch.device(
-            'cuda' if opt['gpu_ids'] is not None else 'cpu')
+    def __init__(self, args):
+        self.args = args
+        self.device = torch.device(args.device)
         self.begin_step = 0
         self.begin_epoch = 0
 

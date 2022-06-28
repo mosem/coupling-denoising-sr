@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# dummy files
+
+bash data/prep_egs_files.sh noisy 8 clean 16 4
+
 # SR-only on noisy files
 
 bash data/prep_egs_files.sh noisy 4 noisy 16

@@ -1,4 +1,6 @@
 import os
+
+from omegaconf import OmegaConf
 from torchaudio.transforms import Spectrogram
 import numpy as np
 import cv2
@@ -34,7 +36,7 @@ class WandbLogger:
     """
     Log using `Weights and Biases`.
     """
-    def __init__(self, opt):
+    def __init__(self, args):
         try:
             import wandb
         except ImportError:
@@ -50,35 +52,37 @@ class WandbLogger:
 
         self.files_initially_logged = set()
 
+        self.args = args
+        wandb_conf = OmegaConf.to_container(args.wandb)
+
         # Initialize a W&B run
         if self._wandb.run is None:
-            if 'id' in opt['wandb']:
+            if 'id' in args.wandb:
                 self._wandb.init(
-                    id=opt['wandb']['id'],
+                    id=args.wandb.id,
                     resume='must',
-                    project=opt['wandb']['project'],
+                    project=args.wandb.project,
                     entity=WANDB_ENTITY,
-                    config=opt,
-                    group=opt['wandb']['group'],
-                    name=opt['wandb']['name'],
-                    dir='./experiments',
+                    config=wandb_conf,
+                    group=args.wandb.group,
+                    name=args.wandb.name + f'-{args.phase}'
                 )
             else:
                 self._wandb.init(
-                    project=opt['wandb']['project'],
+                    project=args.wandb.project,
                     entity=WANDB_ENTITY,
-                    config=opt,
-                    group=opt['wandb']['group'],
-                    name=opt['wandb']['name'],
-                    dir='./experiments'
+                    config=wandb_conf,
+                    group=args.wandb.group,
+                    name=args.wandb.name + f'-{args.phase}',
+                    resume=args.wandb.resume
                 )
 
         self.config = self._wandb.config
 
-        self.disable_eval = self.config.get('disable_eval', None)
+        self.log_eval = args.wandb.log_eval
 
-        if self.config.get('log_eval', None):
-            self.eval_table = self._wandb.Table(columns=['source_audio',
+        if self.log_eval:
+            self.table = self._wandb.Table(columns=['source_audio',
                                                          'pred_audio',
                                                          'target_audio',
                                                          'source_spec',
@@ -90,17 +94,12 @@ class WandbLogger:
                                                          'lsd',
                                                          'visqol'])
         else:
-            self.eval_table = None
-
-        if self.config.get('log_infer', None):
-            self.infer_table = self._wandb.Table(columns=['source_audio',
-                                                          'pred_audio',
-                                                          'target_audio',
-                                                          'source_spec',
-                                                          'pred_spec',
-                                                          'target_spec'])
-        else:
-            self.infer_table = None
+            self.table = self._wandb.Table(columns=['source_audio',
+                                                    'pred_audio',
+                                                    'target_audio',
+                                                    'source_spec',
+                                                    'pred_spec',
+                                                    'target_spec'])
 
     def log_metrics(self, metrics, commit=True): 
         """
@@ -174,8 +173,8 @@ class WandbLogger:
 
 
 
-    def log_eval_data(self, filename, source_signal, pred_signal, target_signal, target_sr,
-                                                                    pesq, stoi, sisnr, lsd, visqol):
+    def log_data(self, filename, source_signal, pred_signal, target_signal, target_sr,
+                 metrics=None):
         """
         Add data row-wise to the initialized table.
         """
@@ -187,47 +186,49 @@ class WandbLogger:
         target_wandb_data = self.convert_signal_to_wandb_data(target_signal, target_sr,
                                                               filename + '_target', add_eps=True)
 
+        if self.log_eval and metrics:
+            self.table.add_data(
+                source_wandb_data['audio'],
+                pred_wandb_data['audio'],
+                target_wandb_data['audio'],
+                source_wandb_data['spec'],
+                pred_wandb_data['spec'],
+                target_wandb_data['spec'],
+                metrics['pesq'],
+                metrics['stoi'],
+                metrics['sisnr'],
+                metrics['lsd'],
+                metrics['visqol']
+            )
+        else:
+            self.table.add_data(
+                source_wandb_data['audio'],
+                pred_wandb_data['audio'],
+                target_wandb_data['audio'],
+                source_wandb_data['spec'],
+                pred_wandb_data['spec'],
+                target_wandb_data['spec']
+            )
 
-        self.eval_table.add_data(
-            source_wandb_data['audio'],
-            pred_wandb_data['audio'],
-            target_wandb_data['audio'],
-            source_wandb_data['spec'],
-            pred_wandb_data['spec'],
-            target_wandb_data['spec'],
-            pesq,
-            stoi,
-            sisnr,
-            lsd,
-            visqol
-        )
 
-    def log_infer_data(self, filename, source_signal, pred_signal, target_signal, target_sr):
-        """
-                Add data row-wise to the initialized table.
-                """
+    def log_metrics_table(self, metrics):
+        columns = ['experiment name', 'pesq', 'stoi', 'sisnr', 'lsd', 'visqol']
+        data = [[self.args.wandb.name,
+                metrics['pesq'],
+                metrics['stoi'],
+                metrics['sisnr'],
+                metrics['lsd'],
+                metrics['visqol']]]
 
-        source_wandb_data = self.convert_signal_to_wandb_data(source_signal, target_sr,
-                                                              filename + '_source', add_eps=True)
-        pred_wandb_data = self.convert_signal_to_wandb_data(pred_signal, target_sr,
-                                                            filename + '_pr', add_eps=True)
-        target_wandb_data = self.convert_signal_to_wandb_data(target_signal, target_sr,
-                                                              filename + '_target', add_eps=True)
+        # plots_dict = {f'Average Metrics/{k}': float(v) for k,v in metrics.items()}
+        # self._wandb.log(plots_dict, commit=True)
 
-        self.infer_table.add_data(
-            source_wandb_data['audio'],
-            pred_wandb_data['audio'],
-            target_wandb_data['audio'],
-            source_wandb_data['spec'],
-            pred_wandb_data['spec'],
-            target_wandb_data['spec']
-        )
+        metrics_table = self._wandb.Table(data=data, columns=columns)
+        self._wandb.log({'Average Metrics/table': metrics_table}, commit=True)
 
-    def log_eval_table(self, commit=False):
+    def log_results_table(self, commit=False):
         """
         Log the table
         """
-        if self.eval_table and not self.disable_eval:
-            self._wandb.log({'eval_data': self.eval_table}, commit=commit)
-        if self.infer_table:
-            self._wandb.log({'infer_data': self.infer_table}, commit=commit)
+        self._wandb.log({'Results/table': self.table}, commit=commit)
+

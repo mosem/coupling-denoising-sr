@@ -80,27 +80,26 @@ def init_weights(net, init_type='kaiming', scale=1, std=0.02):
 
 
 # Generator
-def define_G(opt):
-    model_opt = opt['model']
-    if model_opt['which_model_G'] == 'hdemucs':
+def define_G(args):
+    model_args = args.model
+    if model_args.name == 'hdemucs':
         from .modules import diffusion, hdemucs
 
-        model = hdemucs.HDemucs(in_channels=model_opt['hdemucs']['in_channels'],
-                                out_channels=model_opt['hdemucs']['out_channels'],
-                                channels=model_opt['hdemucs']['channels'])
+        model = hdemucs.HDemucs(in_channels=model_args.in_channels,
+                                out_channels=model_args.out_channels,
+                                channels=model_args.channels)
     else:
         raise NotImplementedError(
-            'model [{:s}] is not supported'.format(model_opt['which_model_G']))
+            'model [{:s}] is not supported'.format(model_args.name))
 
     netG = diffusion.GaussianDiffusion(
         model,
         loss_type='l1',    # L1 or L2
-        schedule_opt=model_opt['beta_schedule']['train']
     )
-    if opt['phase'] == 'train':
+    if args.phase == 'train':
         # init_weights(netG, init_type='kaiming', scale=0.1)
         init_weights(netG, init_type='orthogonal')
-    if opt['gpu_ids'] and opt['distributed']:
+    if args.device == 'cuda' and args.distributed:
         assert torch.cuda.is_available()
         netG = nn.DataParallel(netG) # TODO: change to Distributed Data Parallel
     return netG

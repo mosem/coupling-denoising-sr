@@ -1,0 +1,12 @@
+# @package noise_schedule
+
+train:
+  schedule: linear
+  n_timestep: 2000
+  linear_start: 1e-6
+  linear_end: 1e-2
+val:
+  schedule: linear
+  n_timestep: 500
+  linear_start: 1e-6
+  linear_end: 1e-2

@@ -19,11 +19,11 @@ class DDPM(BaseModel):
         # set loss and load resume state
         self.set_loss()
         self.set_new_noise_schedule(
-            args.beta_schedule.train, schedule_phase='train')
-        if self.opt['phase'] == 'train':
+            args.noise_schedule.train, schedule_phase='train')
+        if self.args.phase == 'train':
             self.netG.train()
             # find the parameters to optimize
-            if args.finetune_norm:
+            if args.model.finetune_norm:
                 optim_params = []
                 for k, v in self.netG.named_parameters():
                     v.requires_grad = False
@@ -113,9 +113,9 @@ class DDPM(BaseModel):
 
     def save_network(self, epoch, iter_step):
         gen_path = os.path.join(
-            self.opt['path']['checkpoint'], 'I{}_E{}_gen.pth'.format(iter_step, epoch))
+            self.args.path.checkpoint, 'I{}_E{}_gen.pth'.format(iter_step, epoch))
         opt_path = os.path.join(
-            self.opt['path']['checkpoint'], 'I{}_E{}_opt.pth'.format(iter_step, epoch))
+            self.args.path.checkpoint, 'I{}_E{}_opt.pth'.format(iter_step, epoch))
         # gen
         network = self.netG
         if isinstance(self.netG, nn.DataParallel):
@@ -134,8 +134,8 @@ class DDPM(BaseModel):
             'Saved model in [{:s}] ...'.format(gen_path))
 
     def load_network(self):
-        load_path = self.opt['path']['resume_state']
-        if load_path is not None:
+        if self.args.resume and self.args.resume_state:
+            load_path = os.path.join(self.args.path.checkpoint, self.args.resume_state)
             logger.info(
                 'Loading pretrained model for G [{:s}] ...'.format(load_path))
             gen_path = '{}_gen.pth'.format(load_path)
@@ -145,10 +145,10 @@ class DDPM(BaseModel):
             if isinstance(self.netG, nn.DataParallel):
                 network = network.module
             network.load_state_dict(torch.load(
-                gen_path), strict=(not self.opt['model']['finetune_norm']))
+                gen_path), strict=(not self.args.model.finetune_norm))
             # network.load_state_dict(torch.load(
             #     gen_path), strict=False)
-            if self.opt['phase'] == 'train':
+            if self.args.phase == 'train':
                 # optimizer
                 opt = torch.load(opt_path)
                 self.optG.load_state_dict(opt['optimizer'])

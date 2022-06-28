@@ -1,0 +1,60 @@
+defaults:
+  - dset: dummy-noisy-8-clean-16
+  - model: hdemucs
+  - noise_schedule: linear-2000-500
+  - train: standard
+  - hydra/job_logging: colorlog
+  - hydra/hydra_logging: colorlog
+
+device: cuda
+phase: # set in script
+distributed: False
+
+resume: False
+resume_state: # e.g. I400_E100
+
+path:
+  results: results
+  checkpoint: checkpoint
+
+disable_eval: False
+
+experiment_name: ${model.name},batch_size=${dset.train_batch_size},n_iter=${train.n_iter}
+
+wandb:
+  project: coupling-denoising-sr
+  group: ${dset.name}
+  name: ${experiment_name}
+  enable: True
+  log_eval: True
+  log_wandb_ckpt: False
+  resume: True
+
+hydra:
+  sweep:
+    dir: ./outputs/${dset.name}/${experiment_name}
+    subdir: ${hydra.job.num}
+  run:
+    dir: ./outputs/${dset.name}/${model.name}-${dset.train_batch_size}
+#  job:
+#    config:
+#      # configuration for the ${hydra.job.override_dirname} runtime variable
+
+  job_logging:
+    handlers:
+      file:
+        class: logging.FileHandler
+        mode: w
+        formatter: colorlog
+        filename: trainer.log
+      console:
+        class: logging.StreamHandler
+        formatter: colorlog
+        stream: ext://sys.stderr
+
+  hydra_logging:
+    handlers:
+      console:
+        class: logging.StreamHandler
+        formatter: colorlog
+        stream: ext://sys.stderr

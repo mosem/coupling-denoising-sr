@@ -1,79 +1,42 @@
+import sys
+sys.path.append('../coupling-denoising-sr')
+
 import torch
 import torchaudio
 
 import data as Data
 import model as Model
-import argparse
 import logging
-from utils import setup_logger, parse, dict_to_nonedict, dict2str
+from utils import parse_dset_args
 import metrics as Metrics
 from wandb_logger import WandbLogger
 import os
+import hydra
 
-from data.util import SequentialBinSampler, collate_fn
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', type=str, default='config/sr_sr3_64_512.json',
-                        help='JSON file for configuration')
-    parser.add_argument('-p', '--phase', type=str, choices=['val'], help='val(generation)', default='val')
-    parser.add_argument('-gpu', '--gpu_ids', type=str, default=None)
-    parser.add_argument('-debug', '-d', action='store_true')
-    parser.add_argument('-enable_wandb', action='store_true')
-    parser.add_argument('-disable_eval', action='store_true')
-    parser.add_argument('-log_eval', action='store_true')
-    parser.add_argument('-log_infer', action='store_true')
-    parser.add_argument('--sr', type=int, default=16000)
 
-    # parse configs
-    args = parser.parse_args()
-    opt = parse(args)
-    # Convert to NoneDict, which return None for missing key.
-    opt = dict_to_nonedict(opt)
 
-    # logging
-    torch.backends.cudnn.enabled = True
-    torch.backends.cudnn.benchmark = True
-
-    setup_logger(None, opt['path']['log'],
-                        'train', level=logging.INFO, screen=True)
-    setup_logger('val', opt['path']['log'], 'val', level=logging.INFO)
-    logger = logging.getLogger('base')
-    logger.info(dict2str(opt))
-
-    # Initialize WandbLogger
-    if opt['enable_wandb']:
-        wandb_logger = WandbLogger(opt)
-    else:
-        wandb_logger = None
+def test(args, logger, wandb_logger=None):
 
     # dataset
-    for phase, dataset_opt in opt['datasets'].items():
-        if phase == 'val':
-            val_set = Data.create_dataset(dataset_opt, pad_to_output_length=True)
-            sampler = SequentialBinSampler(val_set.get_file_lengths())
-            val_loader = Data.create_dataloader(
-                val_set, dataset_opt, phase, sampler, collate_fn)
+    val_set = Data.create_dataset(args.dset, 'val')
+    val_loader = Data.create_dataloader(val_set, args.dset, 'val')
     logger.info('Initial Dataset Finished')
 
     # model
-    diffusion = Model.create_model(opt)
+    diffusion = Model.create_model(args)
     logger.info('Initial Model Finished')
 
     diffusion.set_new_noise_schedule(
-        opt['model']['beta_schedule']['val'], schedule_phase='val')
+        args.noise_schedule.val, schedule_phase='val')
 
-    source_sr = opt['datasets']['val']['source_sr']
-    target_sr = opt['datasets']['val']['target_sr']
+    target_sr = args.dset.target_sr
 
     logger.info('Begin Model Inference.')
-    current_step = 0
-    current_epoch = 0
     idx = 0
     n_processed_batches = 0
 
-    result_path = '{}'.format(opt['path']['results'])
-    os.makedirs(result_path, exist_ok=True)
+    result_path = args.path.results
 
     avg_pesq = 0.0
     avg_stoi = 0.0
@@ -86,10 +49,10 @@ if __name__ == "__main__":
         idx += 1
         filenames = val_data['filename']
 
-        filenames_exist = [os.path.isfile(os.path.join(result_path, filename + '_target.wav')) for filename in filenames]
+        filenames_exist = [os.path.isfile(os.path.join(result_path, filename + '_target.wav')) for filename in
+                           filenames]
         if all(filenames_exist):
             logger.info(f'{idx}/{len(val_loader)}) all files already exists: {",".join(filenames)}')
-
 
             for filename in filenames:
                 target_name = os.path.join(result_path, filename + '_target.wav')
@@ -102,12 +65,13 @@ if __name__ == "__main__":
                 source_name = os.path.join(result_path, filename + '_source.wav')
                 source_signal, _ = torchaudio.load(source_name)
 
+                metrics = None
                 if not args.disable_eval:
                     pesq = Metrics.calculate_pesq(pred_signal.numpy(), target_signal.numpy(), target_sr)
                     stoi = Metrics.calculate_stoi(pred_signal.numpy(), target_signal.numpy(), target_sr)
                     sisnr = Metrics.calculate_sisnr(pred_signal, target_signal)
                     lsd = Metrics.calculate_lsd(pred_signal, target_signal)
-                    visqol = Metrics.calculate_visqol(pred_signal.numpy(), target_signal.numpy(), filename, args.sr)
+                    visqol = Metrics.calculate_visqol(pred_signal.numpy(), target_signal.numpy(), filename, target_sr)
                     avg_pesq += pesq
                     avg_stoi += stoi
                     avg_sisnr += sisnr
@@ -115,14 +79,11 @@ if __name__ == "__main__":
                     avg_visqol += visqol
                     n_files_evaluated += 1
 
-                    if wandb_logger and opt['log_eval']:
-                        wandb_logger.log_eval_data(filename, source_signal, pred_signal, target_signal,
-                                                   target_sr,
-                                                   pesq, stoi, sisnr, lsd, visqol)
+                    metrics = {'pesq': pesq, 'stoi':stoi, 'sisnr': sisnr, 'lsd': lsd, 'visqol': visqol}
 
-                elif wandb_logger and opt['log_infer']:
-                    wandb_logger.log_infer_data(filename, source_signal, pred_signal, target_signal,
-                                                target_sr)
+                if wandb_logger:
+                    wandb_logger.log_data(filename, source_signal, pred_signal, target_signal,
+                                                target_sr, metrics)
 
             continue
 
@@ -161,12 +122,14 @@ if __name__ == "__main__":
             Metrics.save_audio(
                 source_signal, '{}/{}_source.wav'.format(result_path, filename), target_sr)
 
+            metrics = None
             if not args.disable_eval:
                 pesq = Metrics.calculate_pesq(pred_signal[i, -1:, :].numpy(), target_signal.numpy(), target_sr)
                 stoi = Metrics.calculate_stoi(pred_signal[i, -1:, :].numpy(), target_signal.numpy(), target_sr)
                 sisnr = Metrics.calculate_sisnr(pred_signal[i, -1:, :], target_signal)
                 lsd = Metrics.calculate_lsd(pred_signal[i, -1:, :], target_signal)
-                visqol = Metrics.calculate_visqol(pred_signal[i, -1:, :].numpy(), target_signal.numpy(), filename, args.sr)
+                visqol = Metrics.calculate_visqol(pred_signal[i, -1:, :].numpy(), target_signal.numpy(), filename,
+                                                  target_sr)
                 avg_pesq += pesq
                 avg_stoi += stoi
                 avg_sisnr += sisnr
@@ -174,13 +137,12 @@ if __name__ == "__main__":
                 avg_visqol += visqol
                 n_files_evaluated += 1
 
-                if wandb_logger and opt['log_infer']:
-                    wandb_logger.log_eval_data(filename, source_signal, Metrics.tensor2audio(pred_signal[i, -1:, :]), target_signal,
-                                               target_sr,
-                                               pesq, stoi, sisnr, lsd, visqol)
-            elif wandb_logger and opt['log_infer']:
-                wandb_logger.log_infer_data(filename, source_signal, Metrics.tensor2audio(pred_signal[i, -1:, :]), target_signal,
-                                            target_sr)
+                metrics = {'pesq': pesq, 'stoi': stoi, 'sisnr': sisnr, 'lsd': lsd, 'visqol': visqol}
+
+            if wandb_logger:
+                wandb_logger.log_data(filename, source_signal, Metrics.tensor2audio(pred_signal[i, -1:, :]),
+                                            target_signal,
+                                            target_sr, metrics)
 
     logger.info(f'Done. Processed {n_processed_batches}/{len(val_loader)} batches.')
 
@@ -194,15 +156,57 @@ if __name__ == "__main__":
         logger.info('# Validation # PESQ: {:.4}, STOI: {:.4},  SISNR: {:.4}, LSD: {:.4}, VISQOL: {:.4}'.format(
             avg_pesq, avg_stoi, avg_sisnr, avg_lsd, avg_visqol))
 
-        if wandb_logger and opt['log_eval']:
-            wandb_logger.log_metrics({
-                'PESQ': avg_pesq,
-                'STOI': avg_stoi,
-                'SISNR': avg_sisnr,
-                'LSD': avg_lsd,
-                'VISQOL': avg_visqol
+        if wandb_logger and args.wandb.log_eval:
+            wandb_logger.log_metrics_table({
+                'pesq': avg_pesq,
+                'stoi': avg_stoi,
+                'sisnr': avg_sisnr,
+                'lsd': avg_lsd,
+                'visqol': avg_visqol
             })
-            wandb_logger.log_eval_table(commit=True)
 
-    elif wandb_logger and opt['log_infer']:
-        wandb_logger.log_eval_table(commit=True)
+
+    if wandb_logger:
+        wandb_logger.log_results_table(commit=True)
+
+def _main(args):
+    args['phase'] = 'test'
+    args['resume'] = True
+    if not args.resume_state:
+        # get last state
+        sorted_checkpoint_files = sorted(os.listdir(args.path.checkpoint))
+        last_state = '_'.join(sorted_checkpoint_files[-1].split('_')[:2])
+        args.resume_state = last_state
+
+    print(args)
+    parse_dset_args(args.dset)
+
+    os.makedirs(args.path.results, exist_ok=True)
+
+    logger = logging.getLogger('base')
+
+    # Initialize WandbLogger
+    if args.wandb.enable:
+        wandb_logger = WandbLogger(args)
+    else:
+        wandb_logger = None
+
+    test(args, logger, wandb_logger)
+
+
+@hydra.main(config_path="conf", config_name="dummy_config")
+def main(args):
+    try:
+        _main(args)
+    except Exception:
+        logger = logging.getLogger(__name__)
+        logger.exception("Some error happened")
+        os._exit(1)
+
+
+if __name__ == "__main__":
+    torch.backends.cudnn.enabled = True
+    torch.backends.cudnn.benchmark = True
+
+    main()
+

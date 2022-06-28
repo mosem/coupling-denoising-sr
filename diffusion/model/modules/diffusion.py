@@ -65,15 +65,12 @@ class GaussianDiffusion(nn.Module):
     def __init__(
             self,
             denoise_fn,
-            loss_type='l1',
-            schedule_opt=None
+            loss_type='l1'
     ):
         super().__init__()
         self.denoise_fn = denoise_fn
         self.loss_type = loss_type
-        if schedule_opt is not None:
-            pass
-            # self.set_new_noise_schedule(schedule_opt)
+
 
     def set_loss(self, device):
         if self.loss_type == 'l1':
