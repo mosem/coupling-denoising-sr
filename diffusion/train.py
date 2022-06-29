@@ -136,7 +136,6 @@ def train(args, logger, wandb_logger=None):
                         current_epoch, current_step, avg_pesq, avg_stoi, avg_sisnr, avg_lsd, avg_visqol))
 
                 if wandb_logger:
-
                     wandb_logger.log_metrics({
                         'validation/val_pesq': avg_pesq,
                         'validation/val_stoi': avg_stoi,

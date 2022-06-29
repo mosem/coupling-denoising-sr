@@ -6,8 +6,16 @@
 
 The code requires the following libraries:
 - pytorch
+- torchaudio
 - hydra
 - sox
+- numpy
+- tqdm
+- openunmix
+- pesq
+- pystoi
+- wandb
+- cv2
 - **complete**... add requirements.txt file
 
 ### Download and Prepare Data
@@ -38,3 +46,6 @@ This creates all the relevant files.
 
 All script files are placed under the bash_scripts folder.
 Each script file runs the train and test scripts in sequence.
+
+We use the Hydra framework to configure the code.
+For example, to run on multiple GPUs, modify `distributed` to `True` in `diffusion/conf/main_config.yaml`.
