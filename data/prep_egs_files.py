@@ -6,8 +6,15 @@ import torchaudio
 from collections import namedtuple
 import json
 import sys
+from multiprocessing import Pool, Manager
+import tqdm
+
+N_PROCESSES = 10
 
 Info = namedtuple("Info", ["length", "sample_rate", "channels"])
+manager = Manager()
+meta_list = manager.list()
+
 
 def get_info(path):
     info = torchaudio.info(path)
@@ -19,23 +26,24 @@ def get_info(path):
         return Info(siginfo.length // siginfo.channels, siginfo.rate, siginfo.channels)
 
 
+def appendInfoToMetaList(file):
+    global meta_list
+    info = get_info(file)
+    meta_list.append((file, info.length))
+
+
 def find_audio_files(path, n_samples_limit=-1, progress=True):
     audio_files = []
     for file in os.listdir(path):
         if file.endswith('.wav'):
             audio_files.append(os.path.join(path, file))
 
-    meta = []
     if n_samples_limit > 0:
         audio_files = audio_files[:n_samples_limit]
-    for idx, file in enumerate(audio_files):
-        info = get_info(file)
-        meta.append((file, info.length))
-        if progress:
-            print(format((1 + idx) / len(audio_files), " 3.1%"), end='\r', file=sys.stderr)
-    meta.sort()
-    return meta
 
+    pool = Pool(processes=N_PROCESSES)
+    for _ in tqdm.tqdm(pool.imap(appendInfoToMetaList, audio_files), total=len(audio_files)):
+        pass
 
 
 """
@@ -47,9 +55,9 @@ python -m src.prep_egs_files $lr > $out/lr.json
 python -m src.prep_egs_files $hr > $out/hr.json
 
 """
+
 if __name__ == "__main__":
-    meta = []
     path = sys.argv[1]
     n_samples_limit = int(sys.argv[2])
-    meta += find_audio_files(path, n_samples_limit=n_samples_limit)
-    json.dump(meta, sys.stdout, indent=4)
+    find_audio_files(path, n_samples_limit=n_samples_limit)
+    json.dump(sorted(list(meta_list)), sys.stdout, indent=4)

@@ -18,6 +18,9 @@ The code requires the following libraries:
 - cv2
 - **complete**... add requirements.txt file
 
+It was tested on Cuda/11.3. When installing pytorch, make sure to download the relevant version:
+`pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu113 --no-cache-dir`
+
 ### Download and Prepare Data
 
 We use the Valentini (56 speakers) dataset. Download and extract the following files
