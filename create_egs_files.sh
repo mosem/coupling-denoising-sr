@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# dummy files
+# dummy file
 
 bash data/prep_egs_files.sh noisy 8 clean 16 4
 
