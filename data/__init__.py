@@ -1,6 +1,3 @@
-import sys
-sys.path.append('../coupling-denoising-sr')
-
 '''create dataset and dataloader'''
 import logging
 import torch.utils.data

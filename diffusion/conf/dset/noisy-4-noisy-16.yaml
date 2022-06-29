@@ -1,7 +1,7 @@
 # @package dset
 name: noisy-4-noisy-16
-train_json_dir: ../egs/valentini/noisy-4-noisy-16/tr
-val_json_dir: ../egs/valentini/noisy-4-noisy-16/val
+train_json_dir: egs/valentini/noisy-4-noisy-16/tr
+val_json_dir: egs/valentini/noisy-4-noisy-16/val
 
 source_mode: noisy
 source_sr: 4000

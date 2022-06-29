@@ -1,19 +1,24 @@
-import sys
-sys.path.append('../coupling-denoising-sr')
-
 import torch
 import torchaudio
-
-import data as Data
-import model as Model
 import logging
-from utils import parse_dset_args
-import metrics as Metrics
-from wandb_logger import WandbLogger
 import os
 import hydra
 
+try:
+    import data as Data
+    import model as Model
+    import metrics as Metrics
+    from utils import parse_dset_args
+    from wandb_logger import WandbLogger
+except ModuleNotFoundError:
+    import sys
 
+    sys.path.append(sys.path[0] + '/..')
+    import data as Data
+    import model as Model
+    import metrics as Metrics
+    from utils import parse_dset_args
+    from wandb_logger import WandbLogger
 
 
 def test(args, logger, wandb_logger=None):
@@ -179,12 +184,13 @@ def _main(args):
         last_state = '_'.join(sorted_checkpoint_files[-1].split('_')[:2])
         args.resume_state = last_state
 
-    print(args)
     parse_dset_args(args.dset)
 
     os.makedirs(args.path.results, exist_ok=True)
 
     logger = logging.getLogger('base')
+    logger.info("For logs and samples check %s", os.getcwd())
+    logger.info(args)
 
     # Initialize WandbLogger
     if args.wandb.enable:
@@ -195,7 +201,7 @@ def _main(args):
     test(args, logger, wandb_logger)
 
 
-@hydra.main(config_path="conf", config_name="dummy_config")
+@hydra.main(config_path="conf", config_name="main_config")
 def main(args):
     try:
         _main(args)

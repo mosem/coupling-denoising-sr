@@ -1,0 +1,16 @@
+sox==1.4.1
+torch==1.12.0+cu113
+torchaudio==0.12.0+cu113
+hydra-colorlog==1.1.0
+hydra-core==1.0.7
+pesq==0.0.4
+pystoi==0.3.3
+numpy==1.16.2
+tqdm==4.28.1
+openunmix==1.2.1
+opencv-python==4.6.0.66
+wandb==0.12.20
+
+
+
+

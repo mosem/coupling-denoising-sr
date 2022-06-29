@@ -5,21 +5,25 @@
 ### Install required libraries
 
 The code requires the following libraries:
+- sox
 - pytorch
 - torchaudio
-- hydra
-- sox
+- hydra-core==1.0.7
+- hydra-colorlog==1.1
+- pesq 
+- pystoi
 - numpy
 - tqdm
 - openunmix
-- pesq
-- pystoi
 - wandb
-- cv2
-- **complete**... add requirements.txt file
+- opencv-python
 
 It was tested on Cuda/11.3. When installing pytorch, make sure to download the relevant version:
 `pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu113 --no-cache-dir`
+
+`requirements.txt` file is attached.
+
+Make sure to install previous version of hydra (1.0.7), new version is not currently supported.
 
 ### Download and Prepare Data
 
@@ -47,7 +51,10 @@ coupling-denoising-sr/data/prep_egs_files.sh` to point to the relevant directory
 Our code requires files that list the names of audio files.
 To create these files, run: `bash create_egs_files`
 
-This creates all the relevant files.
+This creates all the relevant files.  
+
+This takes a while, you can try to speed this up by modifying the number of pooling jobs `N_PROCESSES`
+in `data/prep_egs_files.py`.
 
 ### Run Script Files
 
@@ -56,3 +63,10 @@ Each script file runs the train and test scripts in sequence.
 
 We use the Hydra framework to configure the code.
 For example, to run on multiple GPUs, modify `distributed` to `True` in `diffusion/conf/main_config.yaml`.
+
+To run diffusion script in a dummy setting:  
+`python diffusion/train.py dset=dummy-noisy-8-clean-16 noise_schedule=dummy train=dummy`  
+`python diffusion/test.py dset=dummy-noisy-8-clean-16 noise_schedule=dummy train=dummy`
+
+Make sure to run scripts from root directory (which contains diffusion directory).
+Otherwise, paths to egs files in dset config files will be incorrect, and need to be changed.

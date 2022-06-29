@@ -1,7 +1,7 @@
 # @package dset
 name: dummy-noisy-8-clean-16
-train_json_dir: ../egs/valentini/noisy-8-clean-16(4)/tr
-val_json_dir: ../egs/valentini/noisy-8-clean-16(4)/val
+train_json_dir: egs/valentini/noisy-8-clean-16(4)/tr
+val_json_dir: egs/valentini/noisy-8-clean-16(4)/val
 
 source_mode: noisy
 source_sr: 8000

@@ -1,15 +1,22 @@
-import sys
-sys.path.append('../coupling-denoising-sr')
-
 import torch
-import data as Data
-import model as Model
 import logging
-from utils import parse_dset_args
-import metrics as Metrics
-from wandb_logger import WandbLogger
 import os
 import hydra
+
+try:
+    import data as Data
+    import model as Model
+    import metrics as Metrics
+    from utils import parse_dset_args
+    from wandb_logger import WandbLogger
+except ImportError:
+    import sys
+    sys.path.append('../')
+    import data as Data
+    import model as Model
+    import metrics as Metrics
+    from utils import parse_dset_args
+    from wandb_logger import WandbLogger
 
 
 def train(args, logger, wandb_logger=None):
@@ -169,10 +176,11 @@ def _main(args):
     else:
         os.makedirs(args.path.checkpoint, exist_ok=True)
 
-    print(args)
     parse_dset_args(args.dset)
 
     logger = logging.getLogger('base')
+    logger.info("For logs, checkpoints and samples check %s", os.getcwd())
+    logger.info(args)
 
     # Initialize WandbLogger
     if args.wandb.enable:
@@ -202,8 +210,3 @@ if __name__ == "__main__":
     torch.backends.cudnn.benchmark = True
 
     main()
-
-
-
-
-

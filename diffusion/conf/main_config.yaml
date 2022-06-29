@@ -8,7 +8,7 @@ defaults:
 
 device: cuda
 phase: # set in script
-distributed: False
+distributed: True
 
 resume: True
 resume_state: # e.g. I400_E100
@@ -32,13 +32,10 @@ wandb:
 
 hydra:
   sweep:
-    dir: ./outputs/${dset.name}/${experiment_name}
+    dir: ./outputs/diffusion/${dset.name}/${experiment_name}
     subdir: ${hydra.job.num}
   run:
-    dir: ./outputs/${dset.name}/${experiment_name}
-#  job:
-#    config:
-#      # configuration for the ${hydra.job.override_dirname} runtime variable
+    dir: ./outputs/diffusion/${dset.name}/${experiment_name}
 
   job_logging:
     handlers:

@@ -14,7 +14,9 @@ N_SPEAKERS=56 # 56/28
 
 out_dir=$source_mode-$source_sr-$target_mode-$target_sr
 
-data_root_dir=../../data/valentini
+data_root_dir=$(realpath ../../data/valentini)
+
+echo "assuming data is in ${data_root_dir}"
 
 if [[ $n_samples_limit -gt 0 ]]
 then
