@@ -45,17 +45,6 @@ def find_audio_files(path, n_samples_limit=-1, progress=True):
     for _ in tqdm.tqdm(pool.imap(appendInfoToMetaList, audio_files), total=len(audio_files)):
         pass
 
-    # if n_samples_limit > 0:
-    #     audio_files = audio_files[:n_samples_limit]
-    # for idx, file in enumerate(audio_files):
-    #     info = get_info(file)
-    #     meta.append((file, info.length))
-    #     if progress:
-    #         print(format((1 + idx) / len(audio_files), " 3.1%"), end='\r', file=sys.stderr)
-    # meta.sort()
-    # return meta
-
-
 """
 usage:
 
@@ -70,4 +59,4 @@ if __name__ == "__main__":
     path = sys.argv[1]
     n_samples_limit = int(sys.argv[2])
     find_audio_files(path, n_samples_limit=n_samples_limit)
-    json.dump(list(meta_list), sys.stdout, indent=4)
+    json.dump(sorted(list(meta_list)), sys.stdout, indent=4)

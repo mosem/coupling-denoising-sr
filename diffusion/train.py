@@ -188,7 +188,7 @@ def _main(args):
     train(args, logger, wandb_logger)
 
 
-@hydra.main(config_path="conf", config_name="dummy_config")
+@hydra.main(config_path="conf", config_name="main_config")
 def main(args):
     try:
         _main(args)
