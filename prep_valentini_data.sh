@@ -103,7 +103,7 @@ python3 data/prep_audio_data.py  \
 	--out_dir ${valentini_dir_path}/noisy_testset_4k \
 	--target_sr 4000 \
 
-# clean test sets from low sample rate to target sample rate: 8->24, 8->16, 4->16
+# noisy test sets from low sample rate to target sample rate: 8->24, 8->16, 4->16
 
 python3 data/prep_audio_data.py  \
 	--data_dir ${valentini_dir_path}/noisy_testset_8k \

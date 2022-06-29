@@ -1,10 +1,10 @@
 # @package dset
-name: clean-4-clean-16
-train_json_dir: egs/valentini/clean-4-clean-16/tr
-val_json_dir: egs/valentini/clean-4-clean-16/val
+name: noisy-16-clean-16
+train_json_dir: egs/valentini/noisy-16-clean-16/tr
+val_json_dir: egs/valentini/noisy-16-clean-16/val
 
-source_mode: clean
-source_sr: 4000
+source_mode: noisy
+source_sr: 16000
 target_mode: clean
 target_sr: 16000
 

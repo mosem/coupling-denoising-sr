@@ -13,10 +13,10 @@ train_segment: 2 # in seconds
 
 shuffle: True
 
-train_batch_size: 2
+train_batch_size: 32
 train_num_workers: 8
 train_data_len: -1
 
-val_batch_size: 1
-val_data_len: 5
+val_batch_size: 32
+val_data_len: -1
 val_num_workers: 8

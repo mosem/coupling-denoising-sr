@@ -19,6 +19,8 @@ except ImportError:
     from wandb_logger import WandbLogger
 
 
+VAL_DATA_LEN_LIMIT=3
+
 def train(args, logger, wandb_logger=None):
 
     # dataset
@@ -177,6 +179,10 @@ def _main(args):
         os.makedirs(args.path.checkpoint, exist_ok=True)
 
     parse_dset_args(args.dset)
+
+    args.dset.val_batch_size = 1
+    # limit the number of samples to validate on
+    args.dset.val_data_len = VAL_DATA_LEN_LIMIT
 
     logger = logging.getLogger('base')
     logger.info("For logs, checkpoints and samples check %s", os.getcwd())

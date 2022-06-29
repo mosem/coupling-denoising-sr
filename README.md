@@ -58,6 +58,10 @@ in `data/prep_egs_files.py`.
 
 ### Run Script Files
 
+Make sure that PYTHONPATH environment variable is set to the root directory (that contains diffusion directory).  
+In csh shell:  
+`setenv PYTHONPATH <root_directory>`
+
 All script files are placed under the bash_scripts folder.
 Each script file runs the train and test scripts in sequence.
 

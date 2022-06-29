@@ -100,6 +100,7 @@ def define_G(args):
         init_weights(netG, init_type='orthogonal')
     if args.device == 'cuda' and args.distributed:
         assert torch.cuda.is_available()
-        logger.info(f'DataParallel: running on {torch.cuda.device_count()} GPUs.')
-        netG = nn.DataParallel(netG) # TODO: change to Distributed Data Parallel
+        if torch.cuda.device_count() > 1:
+            logger.info(f'DataParallel: running on {torch.cuda.device_count()} GPUs.')
+            netG = nn.DataParallel(netG) # TODO: change to Distributed Data Parallel
     return netG
