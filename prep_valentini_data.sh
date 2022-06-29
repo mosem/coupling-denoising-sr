@@ -1,10 +1,5 @@
 #!/bin/bash
 
-. /cs/labs/adiyoss/moshemandel/sr3-audio/venv-sr3/bin/activate # activate virtual environment
-
-cd ./data
-
-
 valentini_dir_path=$1
 
 # clean train sets

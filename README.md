@@ -35,6 +35,10 @@ To prepare the data, run: `bash prep_valentini_data <directory of valentini data
 
 This resamples the data in multi-threaded fashion.
 
+To comply with existing code, place the datasets in `data/valentini` where `data` is a sibling directory to your
+root script folder (e.g. `coupling-denoising-sr`). Otherwise, change the `data_root_dir` parameter in `
+coupling-denoising-sr/data/prep_egs_files.sh` to point to the relevant directory.
+
 ### Create egs Files
 
 Our code requires files that list the names of audio files.

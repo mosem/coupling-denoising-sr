@@ -2,7 +2,6 @@
 
 # usage example: bash prep_egs_files.sh noisy 8 clean 16
 
-. /cs/labs/adiyoss/moshemandel/sr3-audio/venv-sr3/bin/activate # activate virtual environment
 cd ./data
 
 source_mode=$1
@@ -15,7 +14,7 @@ N_SPEAKERS=56 # 56/28
 
 out_dir=$source_mode-$source_sr-$target_mode-$target_sr
 
-data_root_dir=/cs/labs/adiyoss/moshemandel/data/valentini
+data_root_dir=../../data/valentini
 
 if [[ $n_samples_limit -gt 0 ]]
 then
