@@ -19,7 +19,7 @@ path:
 
 disable_eval: False
 
-experiment_name: ${model.name},batch_size=${dset.train_batch_size},n_iter=${train.n_iter}
+experiment_name: ${model.name},batch_size=${dset.train_batch_size},n_training_steps=${train.n_iter},n_inference_steps=${noise_schedule.val.n_timestep}
 
 wandb:
   project: coupling-denoising-sr

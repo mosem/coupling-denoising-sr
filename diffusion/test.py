@@ -157,6 +157,7 @@ def test(args, logger, wandb_logger=None):
             avg_pesq, avg_stoi, avg_sisnr, avg_lsd, avg_visqol))
 
         if wandb_logger and args.wandb.log_eval:
+            wandb_logger.log_metrics(metrics)
             wandb_logger.log_metrics_table({
                 'pesq': avg_pesq,
                 'stoi': avg_stoi,

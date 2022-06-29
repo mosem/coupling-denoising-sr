@@ -13,7 +13,6 @@ def scale_minmax(X, min=0.0, max=1.0):
         X[X == -np.inf] = 1e-9
     if isnan:
         X[X == np.nan] = 1e-9
-    # logger.info(f'isnan: {isnan}, isinf: {isinf}, max: {X.max()}, min: {X.min()}')
 
     X_std = (X - X.min()) / (X.max() - X.min())
     X_scaled = X_std * (max - min) + min
@@ -82,19 +81,21 @@ class WandbLogger:
         self.log_eval = args.wandb.log_eval
 
         if self.log_eval:
-            self.table = self._wandb.Table(columns=['source_audio',
-                                                         'pred_audio',
-                                                         'target_audio',
-                                                         'source_spec',
-                                                         'pred_spec',
-                                                         'target_spec',
-                                                         'pesq',
-                                                         'stoi',
-                                                         'sisnr',
-                                                         'lsd',
-                                                         'visqol'])
+            self.table = self._wandb.Table(columns=['filename',
+                                                    'source_audio',
+                                                     'pred_audio',
+                                                     'target_audio',
+                                                     'source_spec',
+                                                     'pred_spec',
+                                                     'target_spec',
+                                                     'pesq',
+                                                     'stoi',
+                                                     'sisnr',
+                                                     'lsd',
+                                                     'visqol'])
         else:
-            self.table = self._wandb.Table(columns=['source_audio',
+            self.table = self._wandb.Table(columns=['filename',
+                                                    'source_audio',
                                                     'pred_audio',
                                                     'target_audio',
                                                     'source_spec',
@@ -167,7 +168,7 @@ class WandbLogger:
 
         wandb_audio = self._wandb.Audio(signal.squeeze().numpy(), sample_rate=sr,
                                         caption=caption)
-        wandb_spectrogram = self._wandb.Image(convert_spectrogram_to_heatmap(spectrogram))
+        wandb_spectrogram = self._wandb.Image(convert_spectrogram_to_heatmap(spectrogram), caption=caption)
 
         return {'audio': wandb_audio, 'spec': wandb_spectrogram}
 
@@ -188,6 +189,7 @@ class WandbLogger:
 
         if self.log_eval and metrics:
             self.table.add_data(
+                filename,
                 source_wandb_data['audio'],
                 pred_wandb_data['audio'],
                 target_wandb_data['audio'],
@@ -213,22 +215,19 @@ class WandbLogger:
 
     def log_metrics_table(self, metrics):
         columns = ['experiment name', 'pesq', 'stoi', 'sisnr', 'lsd', 'visqol']
-        data = [[self.args.wandb.name,
+        table_data = [[self.args.wandb.name,
                 metrics['pesq'],
                 metrics['stoi'],
                 metrics['sisnr'],
                 metrics['lsd'],
                 metrics['visqol']]]
 
-        # plots_dict = {f'Average Metrics/{k}': float(v) for k,v in metrics.items()}
-        # self._wandb.log(plots_dict, commit=True)
-
-        metrics_table = self._wandb.Table(data=data, columns=columns)
-        self._wandb.log({'Average Metrics/table': metrics_table}, commit=True)
+        metrics_table = self._wandb.Table(data=table_data, columns=columns)
+        self._wandb.log({'Results/Average Metrics': metrics_table}, commit=True)
 
     def log_results_table(self, commit=False):
         """
         Log the table
         """
-        self._wandb.log({'Results/table': self.table}, commit=commit)
+        self._wandb.log({'Results/Samples': self.table}, commit=commit)
 
